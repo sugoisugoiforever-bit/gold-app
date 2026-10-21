@@ -1,0 +1,245 @@
+# تطبيق سعر الذهب في الأردن — ملف بناء APK تلقائي (GitHub Actions)
+# الصق هذا الملف كاملاً كما هو. لا حاجة لأي ملفات أخرى.
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Write app files
+        run: |
+          mkdir -p www
+          cat > package.json <<'EOF'
+          {
+            "name": "gold-jo",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/core": "^6.1.0",
+              "@capacitor/android": "^6.1.0"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "^6.1.0"
+            }
+          }
+          EOF
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.goldjo.prices",
+            "appName": "سعر الذهب",
+            "webDir": "www",
+            "plugins": {
+              "CapacitorHttp": {
+                "enabled": true
+              }
+            }
+          }
+          EOF
+          cat > www/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="ar" dir="rtl">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+          <title>سعر الذهب في الأردن</title>
+          <style>
+          :root{--bg:#faf7f0;--card:#fff;--ink:#2a2418;--mute:#7b705a;--line:#ece4d0;--gold:#b8892b;--gold2:#e2b64f;--up:#1e7a4a;--dn:#a6432f;--chip:#f5edd6}
+          @media (prefers-color-scheme:dark){:root{--bg:#14110b;--card:#1d1910;--ink:#f2ead7;--mute:#a99d83;--line:#332c1b;--gold:#e2b64f;--gold2:#f1d27f;--up:#5fcf8f;--dn:#ee8a76;--chip:#2a2414;color-scheme:dark}}
+          *{box-sizing:border-box}
+          body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Segoe UI",Roboto,sans-serif;line-height:1.6;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+          .wrap{max-width:720px;margin:0 auto;padding:22px 16px 36px}
+          header{text-align:center;margin-bottom:18px}
+          h1{margin:0;font-size:26px;font-weight:800}h1 span{background:linear-gradient(90deg,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+          .sub{color:var(--mute);font-size:13px;margin-top:4px}
+          .live{display:inline-flex;align-items:center;gap:8px;margin-top:10px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12.5px;color:var(--mute)}
+          .dot{width:9px;height:9px;border-radius:50%;background:var(--up);animation:pulse 1.8s infinite}
+          @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(30,122,74,.55)}70%{box-shadow:0 0 0 9px rgba(30,122,74,0)}100%{box-shadow:0 0 0 0 rgba(30,122,74,0)}}
+          .btn{margin-top:12px;border:0;cursor:pointer;font:inherit;font-weight:800;font-size:15px;color:#2a2418;background:linear-gradient(90deg,var(--gold),var(--gold2));padding:11px 30px;border-radius:999px;box-shadow:0 4px 14px rgba(184,137,43,.35)}
+          .btn:disabled{opacity:.6}
+          .btn .sp{display:none;width:12px;height:12px;border:2px solid #2a2418;border-top-color:transparent;border-radius:50%;margin-inline-end:8px;animation:spin .8s linear infinite}
+          .btn.ld .sp{display:inline-block}@keyframes spin{to{transform:rotate(360deg)}}
+          #status{min-height:20px;font-size:12.5px;margin-top:6px;color:var(--mute)}
+          .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+          .card h2{margin:0 0 12px;font-size:16px}
+          table{width:100%;border-collapse:collapse}
+          th,td{padding:12px 6px;text-align:center;border-bottom:1px solid var(--line)}
+          th{font-size:12px;color:var(--mute);font-weight:500}th small{display:block;font-size:10.5px}
+          tr:last-child td{border-bottom:0}td:first-child,th:first-child{text-align:right}
+          .name{font-weight:700}.name small{display:block;color:var(--mute);font-weight:400;font-size:11.5px}
+          .p{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}.sell{color:var(--gold)}
+          .u{font-size:11px;color:var(--mute);margin-inline-start:2px}
+          .note{font-size:12px;color:var(--mute);text-align:center;margin-top:8px}
+          .seg{display:flex;background:var(--chip);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:12px}
+          .seg button{flex:1;border:0;background:transparent;color:var(--mute);font:inherit;font-weight:700;padding:9px;border-radius:9px}
+          .seg button.on{background:var(--card);color:var(--gold);box-shadow:0 1px 6px rgba(0,0,0,.12)}
+          label{display:block;font-size:12.5px;color:var(--mute);margin-bottom:6px}
+          .inp{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+          .inp input{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;font-size:21px;font-weight:700;padding:11px 14px;outline:0;min-width:0;text-align:right}
+          .inp span{padding:0 14px;color:var(--mute);font-size:13px}
+          .res{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+          .r{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--bg)}
+          .r b{display:block;font-size:11.5px;color:var(--mute);font-weight:500}
+          .r em{font-style:normal;display:block;font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.r.g em{color:var(--gold)}
+          .r i{font-style:normal;font-size:11px;color:var(--mute)}
+          .ov{position:fixed;inset:0;background:rgba(20,14,4,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+          .ov.on{display:flex}
+          .pop{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px 18px;max-width:330px;width:100%;text-align:center}
+          .pop .ic{width:52px;height:52px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;background:var(--up)}
+          .pop.err .ic{background:var(--dn)}.pop h3{margin:0 0 6px;font-size:18px}.pop p{margin:0 0 14px;color:var(--mute);font-size:13.5px}
+          .pop button{border:0;font:inherit;font-weight:800;color:#2a2418;background:linear-gradient(90deg,var(--gold),var(--gold2));padding:9px 30px;border-radius:999px}
+          </style>
+          </head>
+          <body>
+          <div class="wrap">
+          <header>
+            <h1>سعر الذهب في <span>الأردن</span></h1>
+            <div class="sub">حسب آخر نشرة صادرة عن نقابة تجار الحلي والمجوهرات · قبل المصنعية</div>
+            <div class="live"><span class="dot"></span><span id="clock">—</span></div>
+            <div><button class="btn" id="refresh" onclick="refresh(true)"><span class="sp"></span><span id="btxt">حدّث الأسعار</span></button></div>
+            <div id="status" aria-live="polite"></div>
+          </header>
+          <section class="card">
+            <h2>الأسعار الحالية</h2>
+            <table>
+              <thead><tr><th></th><th>سعر البيع<small>يشتري المواطن</small></th><th>سعر الشراء<small>يبيع المواطن</small></th></tr></thead>
+              <tbody>
+                <tr><td class="name">ذهب عيار 21<small>للغرام</small></td><td><span class="p sell" id="g-sell"></span><span class="u">د.أ</span></td><td><span class="p" id="g-buy"></span><span class="u">د.أ</span></td></tr>
+                <tr><td class="name">الليرة الرشادي<small>7 غرامات</small></td><td><span class="p sell" id="l-sell"></span><span class="u">د.أ</span></td><td><span class="p" id="l-buy"></span><span class="u">د.أ</span></td></tr>
+              </tbody>
+            </table>
+            <div class="note">آخر نشرة معتمدة: <b id="stamp"></b><br><span id="src"></span></div>
+          </section>
+          <section class="card">
+            <h2>الحاسبة</h2>
+            <div class="seg"><button class="on" id="m-g" onclick="setMode('g')">بالغرام (عيار 21)</button><button id="m-l" onclick="setMode('l')">بالليرة الرشادي</button></div>
+            <label for="qty" id="qlabel">عدد الغرامات</label>
+            <div class="inp"><input id="qty" type="number" inputmode="decimal" min="0" step="any" value="10"><span id="qunit">غرام</span></div>
+            <div class="res">
+              <div class="r g"><b>إجمالي سعر البيع (تشتري من المحل)</b><em id="t-sell">0.00</em><i>دينار أردني</i></div>
+              <div class="r"><b>إجمالي سعر الشراء (تبيع للمحل)</b><em id="t-buy">0.00</em><i>دينار أردني</i></div>
+            </div>
+            <div class="note">لا تشمل المصنعية</div>
+          </section>
+          </div>
+          <div class="ov" id="ov" onclick="if(event.target===this)closePop()"><div class="pop" id="pop"><div class="ic" id="pic">✓</div><h3 id="pt"></h3><p id="ps"></p><button onclick="closePop()">حسناً</button></div></div>
+
+          <script>
+          //<parser>
+          var AR="٠١٢٣٤٥٦٧٨٩";
+          function norm(s){return String(s||"").replace(/[٠-٩]/g,function(d){return AR.indexOf(d)}).replace(/٫/g,".").replace(/(\d),(\d{1,2})(?!\d)/g,"$1.$2")}
+          function nums(s){return(s.match(/\d+(?:\.\d+)?/g)||[]).map(Number)}
+          function strip(h){return String(h).replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;|&#160;/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ")}
+          function gramAt(t,i,ref){
+            var seg=t.slice(i,i+240),c=seg.slice(6).search(/عيار\s*(?:24|22|18|14|12|9|21)(?!\d)|الليرة|الجنيه|رشاد/);
+            if(c>=0)seg=seg.slice(0,c+6);
+            var a=nums(seg.replace(/21/,"")).filter(function(n){return ref?Math.abs(n/ref-1)<=0.25:(n>=20&&n<=1000)});
+            if(a.length<2)return null;
+            var s=Math.max(a[0],a[1]),b=Math.min(a[0],a[1]);
+            return(s/b>=1.02&&s/b<=1.09)?{s:s,b:b}:null}
+          function parseText(raw,ref){
+            var t=norm(strip(raw)),re=/عيار\s*21|21\s*(?:عيار|قيراط)|قيراط\s*21/g,m,g=null;
+            while(!g&&(m=re.exec(t)))g=gramAt(t,m.index,ref);
+            if(!g)return null;
+            var o={gSell:g.s,gBuy:g.b,lSell:null,lBuy:null,lDerived:true},r2=/رشاد/g,k,ok=function(n,x){return n/x>6.5&&n/x<7.6};
+            while(o.lSell==null&&(k=r2.exec(t))){
+              var q=nums(t.slice(k.index,k.index+160)).filter(function(n){return n>=100&&n<=1500});
+              if(q.length>=2){var ls=Math.max(q[0],q[1]),lb=Math.min(q[0],q[1]);if(ok(ls,g.s)&&ok(lb,g.b)){o.lSell=ls;o.lBuy=lb;o.lDerived=false}}
+              else if(q.length===1&&ok(q[0],g.s)){o.lSell=q[0];o.lBuy=+(g.b*7).toFixed(2)}
+            }
+            if(o.lSell==null){o.lSell=+(g.s*7).toFixed(2);o.lBuy=+(g.b*7).toFixed(2)}
+            return o}
+          function rssItems(x){
+            var out=[],re=/<item>([\s\S]*?)<\/item>/g,m;
+            function tag(b,n){var r=new RegExp("<"+n+"[^>]*>([\\s\\S]*?)</"+n+">").exec(b);return r?r[1].replace(/<!\[CDATA\[|\]\]>/g,"").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').trim():""}
+            while((m=re.exec(x))){var b=m[1],l=tag(b,"link"),u=l;try{var p=new URL(l).searchParams.get("url");if(p)u=p}catch(e){}
+              out.push({title:tag(b,"title"),url:u,time:new Date(tag(b,"pubDate")).getTime()||0})}
+            return out}
+          //</parser>
+
+          var UA="Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36";
+          function feed(q){return"https://www.bing.com/news/search?q="+encodeURIComponent(q)+"&format=RSS&setlang=ar&cc=JO&qft=sortbydate%3d%221%22"}
+          var FEEDS=[feed("سعر الذهب في الأردن عيار 21 الليرة الرشادي"),feed("تسعيرة نقابة الحلي والمجوهرات الذهب الأردن بيع شراء")];
+          var $=function(i){return document.getElementById(i)},mode="g",busy=false;
+          var DEF={gSell:84.20,gBuy:80.30,lSell:591.50,lBuy:562.10,asOf:Date.parse("2026-10-20T11:00:00+03:00"),src:"",n:0};
+          var DATA=DEF;try{var sv=JSON.parse(localStorage.getItem("gold")||"null");if(sv&&sv.gSell>sv.gBuy)DATA=sv}catch(e){}
+          function f(n){return n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+          function dt(ms,o){return new Intl.DateTimeFormat("ar-JO-u-nu-latn",Object.assign({timeZone:"Asia/Amman"},o)).format(new Date(ms))}
+          function render(){
+            $("g-sell").textContent=f(DATA.gSell);$("g-buy").textContent=f(DATA.gBuy);$("l-sell").textContent=f(DATA.lSell);$("l-buy").textContent=f(DATA.lBuy);
+            $("stamp").textContent=dt(DATA.asOf,{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
+            $("src").textContent=DATA.src?("المصدر: "+DATA.src+(DATA.n>1?" · مؤكدة من "+DATA.n+" مصادر":"")):"نشرة مضمّنة في التطبيق — اضغط «حدّث الأسعار» للبحث عن الأحدث";
+            calc()}
+          function calc(){var q=Math.max(0,parseFloat($("qty").value)||0),g=mode==="g";$("t-sell").textContent=f(q*(g?DATA.gSell:DATA.lSell));$("t-buy").textContent=f(q*(g?DATA.gBuy:DATA.lBuy))}
+          function setMode(m){mode=m;$("m-g").classList.toggle("on",m==="g");$("m-l").classList.toggle("on",m==="l");$("qlabel").textContent=m==="g"?"عدد الغرامات":"عدد الليرات";$("qunit").textContent=m==="g"?"غرام":"ليرة";$("qty").value=m==="g"?10:1;calc()}
+          function tick(){$("clock").textContent=dt(Date.now(),{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+          function pop(t,s,k){$("pt").textContent=t;$("ps").textContent=s;$("pop").className="pop"+(k==="err"?" err":"");$("pic").textContent=k==="err"?"!":"✓";$("ov").classList.add("on");clearTimeout(pop.t);if(k!=="err")pop.t=setTimeout(closePop,5000)}
+          function closePop(){$("ov").classList.remove("on")}
+          function host(u){try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return""}}
+          async function http(url){
+            var H=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.CapacitorHttp;
+            if(H){var r=await H.get({url:url,headers:{"User-Agent":UA,"Accept-Language":"ar,en;q=0.8"},connectTimeout:15000,readTimeout:15000,responseType:"text"});
+              if(r.status<200||r.status>=300)throw new Error("http "+r.status);return typeof r.data==="string"?r.data:JSON.stringify(r.data)}
+            var r2=await fetch(url);return r2.text()}
+          async function findLatest(){
+            var items=[],fails=0,fr=await Promise.allSettled(FEEDS.map(http));
+            fr.forEach(function(r){if(r.status==="fulfilled")items=items.concat(rssItems(r.value));else fails++});
+            if(!items.length)return{err:fails?"net":"none"};
+            var seen={},now=Date.now();
+            items=items.filter(function(i){if(!i.url||seen[i.url]||!i.time)return false;seen[i.url]=1;return/الذهب/.test(i.title)&&now-i.time<48*36e5}).sort(function(a,b){return b.time-a.time}).slice(0,8);
+            var rs=await Promise.allSettled(items.map(function(i){return http(i.url).then(function(h){var o=parseText(h,DATA.gSell);return o&&{o:o,time:i.time,src:host(i.url)}})}));
+            var c=[];rs.forEach(function(r){if(r.status==="fulfilled"&&r.value)c.push(r.value)});
+            if(!c.length)return{err:"none"};
+            c.sort(function(a,b){return b.time-a.time});
+            var top=c[0],n=c.filter(function(x){return x.o.gSell===top.o.gSell&&x.o.gBuy===top.o.gBuy}).length;
+            return{c:top,n:n}}
+          async function refresh(manual){
+            if(busy)return;busy=true;var b=$("refresh");
+            if(manual){b.disabled=true;b.classList.add("ld");$("btxt").textContent="جارٍ البحث عن آخر نشرة…"}
+            try{
+              var r=await findLatest();
+              if(r.err){if(manual)pop("تعذّر التحديث",r.err==="net"?"لا يوجد اتصال بالإنترنت. الأسعار المعروضة لم تتغير.":"لم أجد نشرة واضحة الأرقام الآن. الأسعار المعروضة لم تتغير.","err");return}
+              var o=r.c.o,diff=o.gSell!==DATA.gSell||o.gBuy!==DATA.gBuy||o.lSell!==DATA.lSell||o.lBuy!==DATA.lBuy,newer=r.c.time>DATA.asOf;
+              if(newer){var changed=diff;DATA={gSell:o.gSell,gBuy:o.gBuy,lSell:o.lSell,lBuy:o.lBuy,asOf:r.c.time,src:r.c.src,n:r.n};
+                try{localStorage.setItem("gold",JSON.stringify(DATA))}catch(e){}render();
+                if(manual)pop("تم تحديث الأسعار",changed?"وُجدت نشرة أحدث وتم تعديل الأسعار.":"وُجدت نشرة أحدث لكن الأسعار كما هي.","ok")}
+              else if(manual)pop("تم تحديث الأسعار","لا توجد نشرة أحدث، الأسعار كما هي.","ok");
+              $("status").textContent="آخر فحص: "+dt(Date.now(),{hour:"2-digit",minute:"2-digit"});
+            }catch(e){if(manual)pop("تعذّر التحديث","حدث خطأ أثناء البحث. حاول مرة أخرى بعد قليل.","err")}
+            finally{busy=false;b.disabled=false;b.classList.remove("ld");$("btxt").textContent="حدّث الأسعار"}}
+          $("qty").addEventListener("input",calc);
+          render();tick();setInterval(tick,1000);
+          refresh(false);setInterval(function(){refresh(false)},600000);
+          document.addEventListener("visibilitychange",function(){if(!document.hidden)refresh(false)});
+          </script>
+          </body>
+          </html>
+
+          EOF
+      - name: Install and add Android
+        run: |
+          npm install
+          npx cap add android
+          npx cap sync android
+      - name: Build APK
+        run: |
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../gold-prices.apk
+      - name: Publish APK as a release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: APK ${{ github.run_number }}
+          files: gold-prices.apk
